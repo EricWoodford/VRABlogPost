@@ -46,7 +46,7 @@ $ResultsDetails = @()
 $strCloudAccountName = $strCloudAccountName.replace(" ","_")
 $ResultsDetails += $strCloudAccountName
 
-Function AuthenticateWithVRA {
+Function Request-VRAAuthentication  {
     #RefreshToken is generated in VRA GUI. 
     # - Login as an admin - browse to 'my account' - select API Tokens. 
     # - Generate a new token. 
@@ -57,6 +57,7 @@ Function AuthenticateWithVRA {
     $MyAccessToken = ($GetMyToken | convertFrom-json).access_token
     return @{"Authorization"="Bearer $MyAccessToken"}
 }
+
 function Get-APIData {
     [CmdLetBinding()]
 param(
@@ -72,7 +73,7 @@ param(
     [string]$FilterValue2
 
 )
-    $headers = AuthenticateWithVRA
+    $headers =  Request-VRAAuthentication 
     #create a search filter if both values provided.
     if ("" -ne $FilterValue -and "" -ne $FilterKey) {
         $SearchFilter = "("+$FilterKey+" eq '"+$FilterValue+"')"      
@@ -104,7 +105,7 @@ param(
 
 
 ########################## Verify Authentication Parameters working correctly.  ####################
-$headers = AuthenticateWithVRA 
+$headers =  Request-VRAAuthentication  
 if ($null -eq $headers.Authorization -or $headers.Authorization.Length -lt 20 )  {write-error "ERROR: not authenticated with VRA.";exit}
 $testAbout = get-apidata -URIBit "/iaas/api/about";$apiVersion = $testAbout.latestApiVersion
 if($null -eq $testAbout.latestApiVersion) {write-error "ERROR: not authenticated with VRA.";exit}
@@ -214,7 +215,7 @@ else {    # Drop completely out of script if cloud-account fails to create.
 
     ###############################BUILD IMAGE PROFILES ################################
     write-verbose  "Building image profiles based on source/dev account: " #,$DevAccountID    
-    $headers = AuthenticateWithVRA
+    $headers =  Request-VRAAuthentication 
     #Get DevSandbox Regions, Copy their flavor and image mappings to the new cloud account
     $MyDevSandboxRegions = Get-APIData -URIBit /iaas/api/regions -FilterKey "cloudAccountId" -FilterValue $DevAccountID
     #Find regions associated with new cloud account, these are originally defined by static variable $CloudRegionArray
@@ -257,7 +258,7 @@ else {    # Drop completely out of script if cloud-account fails to create.
         }
     }
     #####################################  Loop Flavor mappings ####################################
-    $headers = AuthenticateWithVRA
+    $headers = Request-VRAAuthentication 
    #$Static_AllTheFlavors = @("t2.micro","t2.nano","t2.small","t2.medium","t2.large","t2.xlarge","t2.2xlarge",`
     #                  "m5a.xlarge","m5a.2xlarge","m5a.4xlarge","m5a.8xlarge","m5a.large",`
     #                  "c5.large","c5.xlarge","c5.2xlarge","c5.4xlarge","c5.9xlarge",`
@@ -306,7 +307,7 @@ else {    # Drop completely out of script if cloud-account fails to create.
 
     ###############################################################################
     #Create basic Network profile for all regions for windows and Linux deployments. 
-    $headers = AuthenticateWithVRA 
+    $headers =  Request-VRAAuthentication  
     ForEach ($thisNewRegion in $NewCARegions) {    
         #find all fabric networks defined in this new Cloud Account. TypeCast as [array] in case only one network found.
         do {
@@ -315,7 +316,7 @@ else {    # Drop completely out of script if cloud-account fails to create.
         } while ($FabricNetworks.count -eq 0 ) # -and $tries -lt 5 )     
               
         Write-verbose $thisNewRegion.externalRegionId
-        $headers=AuthenticateWithVRA
+        $headers = Request-VRAAuthentication 
         ForEach ($fn in $FabricNetworks) {
             write-verbose 'assigning new network tags'            
             $FNnameSplit = $FN.name.split("-")   #Subnet naming standard 'SN-Project-BillingCode-Environment-Role-AvailabilityZoneA/B
@@ -348,7 +349,7 @@ else {    # Drop completely out of script if cloud-account fails to create.
     }
 
     ################################   Create basic storage profile in AWS.  ###############################
-    $headers = AuthenticateWithVRA
+    $headers =  Request-VRAAuthentication 
     ForEach ($thisNewRegion in $NewCARegions) {
         $findExistingStorageProfile = Get-APIData -URIBit "/iaas/api/storage-profiles-aws" -FilterKey externalRegionId -FilterValue $thisNewRegion.externalRegionId  | where-object{$_.name -eq $FindcloudAccount.name}
         if ($null -eq $findExistingStorageProfile) {   #make sure storage profile doesn't already exist. 
