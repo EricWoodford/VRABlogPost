@@ -17,6 +17,7 @@ F<# .SYNOPSIS
     -          us-west-2[1]=projectName_aws_test_Windows
 .NOTES
      Author     : Cloud Automation & Orchestration team - Eric Woodford
+     		  ref: www.ericwoodford.com
 .EXAMPLES
 #>
 [CmdLetBinding()]
