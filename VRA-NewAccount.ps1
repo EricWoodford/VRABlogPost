@@ -1,4 +1,4 @@
-F<# .SYNOPSIS
+<# .SYNOPSIS
      VRA New Account Deployment
 .DESCRIPTION
      Script uses the the VRA web API to build the user interface for a new customer-project
